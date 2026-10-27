@@ -1,0 +1,41 @@
+﻿# Secrets and environment files
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+credentials.json
+secrets.json
+service-account*.json
+
+# Python
+**/.venv/
+**/venv/
+**/__pycache__/
+*.py[cod]
+
+# Flutter and Dart
+**/.dart_tool/
+**/build/
+**/.flutter-plugins-dependencies
+**/coverage/
+
+# Local databases and backups
+*.db
+*.sqlite
+*.sqlite3
+*.db-journal
+*.bak
+
+# IDE and operating system files
+.idea/
+.vscode/
+*.iml
+*.code-workspace
+.DS_Store
+Thumbs.db
+
+# Temporary development files
+**/temp_check.dart

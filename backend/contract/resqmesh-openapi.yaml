@@ -1,0 +1,336 @@
+openapi: 3.0.3
+info:
+  title: ResQMesh AI - SOS API
+  description: >
+    Shared API contract for the ResQMesh AI disaster/emergency SOS system.
+    This is the single source of truth for both the backend service and the
+    Flutter client. Do not deviate from this contract under any circumstances.
+  version: 1.0.0
+  contact:
+    name: ResQMesh AI
+
+servers:
+  - url: "{baseUrl}/api"
+    description: Base API server (baseUrl is environment-specific, injected via app config/constants)
+    variables:
+      baseUrl:
+        default: https://api.resqmesh.example.com
+
+tags:
+  - name: SOS
+    description: Emergency SOS request operations
+
+paths:
+  /sos:
+    post:
+      tags: [SOS]
+      summary: Create a new SOS request
+      operationId: createSosRequest
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SosRequestCreate"
+      responses:
+        "201":
+          description: SOS request created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SosRequest"
+        "400":
+          description: Invalid request payload
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+    get:
+      tags: [SOS]
+      summary: List all SOS requests
+      operationId: listSosRequests
+      parameters:
+        - name: status
+          in: query
+          required: false
+          schema:
+            $ref: "#/components/schemas/SosStatus"
+          description: Optional filter by status
+        - name: emergency_level
+          in: query
+          required: false
+          schema:
+            $ref: "#/components/schemas/EmergencyLevel"
+          description: Optional filter by emergency level
+        - name: sort
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [newest, oldest]
+            default: newest
+          description: Sort order by created_at
+      responses:
+        "200":
+          description: List of SOS requests
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SosRequest"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /sos/{uuid}:
+    get:
+      tags: [SOS]
+      summary: Get a single SOS request by UUID
+      operationId: getSosRequest
+      parameters:
+        - $ref: "#/components/parameters/UuidPathParam"
+      responses:
+        "200":
+          description: SOS request found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SosRequest"
+        "404":
+          description: SOS request not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+    delete:
+      tags: [SOS]
+      summary: Delete an SOS request by UUID
+      operationId: deleteSosRequest
+      parameters:
+        - $ref: "#/components/parameters/UuidPathParam"
+      responses:
+        "204":
+          description: SOS request deleted successfully (no content)
+        "404":
+          description: SOS request not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /sos/{uuid}/status:
+    put:
+      tags: [SOS]
+      summary: Update the status of an SOS request
+      operationId: updateSosStatus
+      parameters:
+        - $ref: "#/components/parameters/UuidPathParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SosStatusUpdate"
+      responses:
+        "200":
+          description: Status updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SosRequest"
+        "400":
+          description: Invalid status value
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: SOS request not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+components:
+  parameters:
+    UuidPathParam:
+      name: uuid
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+      description: Unique identifier of the SOS request
+
+  schemas:
+    InjuryType:
+      type: string
+      enum: [Critical, Serious, Minor, Pregnant, Child]
+
+    EmergencyLevel:
+      type: string
+      enum: [LOW, MEDIUM, HIGH]
+
+    PriorityLevel:
+      type: string
+      enum: [LOW, MEDIUM, HIGH]
+      description: Server-computed priority classification derived from priority_score
+
+    SosStatus:
+      type: string
+      enum: [PENDING, RECEIVED, ASSIGNED, RESCUED]
+
+    SosRequestCreate:
+      type: object
+      required:
+        - victim_name
+        - injury_type
+        - victim_count
+        - emergency_level
+        - latitude
+        - longitude
+        - battery_percentage
+        - device_id
+      properties:
+        victim_name:
+          type: string
+          example: "Ravi Kumar"
+        injury_type:
+          $ref: "#/components/schemas/InjuryType"
+        victim_count:
+          type: integer
+          minimum: 1
+          example: 1
+        emergency_level:
+          $ref: "#/components/schemas/EmergencyLevel"
+        latitude:
+          type: number
+          format: double
+          example: 18.6298
+        longitude:
+          type: number
+          format: double
+          example: 73.7997
+        battery_percentage:
+          type: integer
+          minimum: 0
+          maximum: 100
+          example: 76
+        device_id:
+          type: string
+          example: "device-a1b2c3"
+
+    SosRequest:
+      type: object
+      required:
+        - uuid
+        - victim_name
+        - injury_type
+        - victim_count
+        - emergency_level
+        - latitude
+        - longitude
+        - battery_percentage
+        - device_id
+        - priority_score
+        - priority_level
+        - status
+        - created_at
+        - updated_at
+      properties:
+        uuid:
+          type: string
+          format: uuid
+          example: "3f2a1b4c-5d6e-7f8a-9b0c-1d2e3f4a5b6c"
+        victim_name:
+          type: string
+          example: "Ravi Kumar"
+        injury_type:
+          $ref: "#/components/schemas/InjuryType"
+        victim_count:
+          type: integer
+          example: 1
+        emergency_level:
+          $ref: "#/components/schemas/EmergencyLevel"
+        latitude:
+          type: number
+          format: double
+          example: 18.6298
+        longitude:
+          type: number
+          format: double
+          example: 73.7997
+        battery_percentage:
+          type: integer
+          example: 76
+        device_id:
+          type: string
+          example: "device-a1b2c3"
+        priority_score:
+          type: number
+          format: double
+          description: Server-computed numeric priority score
+          example: 87.5
+        priority_level:
+          $ref: "#/components/schemas/PriorityLevel"
+        status:
+          $ref: "#/components/schemas/SosStatus"
+        created_at:
+          type: string
+          format: date-time
+          example: "2026-07-25T08:15:30Z"
+        updated_at:
+          type: string
+          format: date-time
+          example: "2026-07-25T08:20:00Z"
+
+    SosStatusUpdate:
+      type: object
+      required:
+        - status
+      properties:
+        status:
+          $ref: "#/components/schemas/SosStatus"
+
+    ErrorResponse:
+      type: object
+      required:
+        - error
+        - message
+      properties:
+        error:
+          type: string
+          example: "NOT_FOUND"
+        message:
+          type: string
+          example: "SOS request with the given uuid was not found."
